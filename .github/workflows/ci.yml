@@ -1,39 +1,44 @@
 name: CI
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
 
 defaults:
   run:
     shell: bash
 
-# Âncora pra não repetir checkout+Ruby
-steps-common: &ruby_setup
-  - uses: actions/checkout@v4
-  - uses: ruby/setup-ruby@v1
-    with:
-      ruby-version: .ruby-version
-      bundler-cache: true
-
 jobs:
   scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      *ruby_setup
+      - uses: actions/checkout@v5
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
       - run: bin/brakeman --no-pager
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      *ruby_setup
+      - uses: actions/checkout@v5
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
       - run: bin/rubocop -f github
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_PASSWORD: postgres
-        ports: [5432:5432]
+          POSTGRES_USER: psychonnect
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -41,11 +46,16 @@ jobs:
           --health-retries 5
     env:
       RAILS_ENV: test
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/psychonect_test
-      RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+      DATABASE_HOST: localhost
+      POSTGRES_USERNAME: psychonect
+      POSTGRES_PASSWORD: password
     steps:
       - name: OS deps
         run: sudo apt-get update && sudo apt-get install -y build-essential libpq-dev
-      *ruby_setup
+      - uses: actions/checkout@v5
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
       - run: bin/rails db:prepare
       - run: bundle exec rspec
