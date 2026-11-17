@@ -43,7 +43,7 @@ gem 'tzinfo-data', platforms: %i[windows jruby]
 gem 'debug', platforms: %i[mri windows], require: 'debug/prelude'
 
 # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
-gem 'brakeman', require: false
+gem 'brakeman', '~> 8.1', require: false
 
 # Loads enviroment variables
 gem 'dotenv'
