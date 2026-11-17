@@ -119,6 +119,25 @@ RSpec.describe 'Authorization boundaries', type: :request do
       expect(recorded_change.current_user_id).to eq(patient.id)
     end
 
+    it 'does not let a patient create a new relationship to an arbitrary physician by reporting a change' do
+      medication = create(:medication)
+      params = {
+        prescription: {
+          patient_id: patient.id,
+          physician_id: physician.id,
+          medication_id: medication.id,
+          quantity: 1,
+          time: '08:00'
+        }
+      }
+
+      expect do
+        post '/prescriptions', params: params, as: :json, headers: auth_header(patient)
+      end.not_to change(PhysicianPatient, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
     it 'does not create a prescription for a user who is neither its patient nor physician' do
       medication = create(:medication)
       params = {
