@@ -374,7 +374,7 @@ DEPENDENCIES
   pg (~> 1.5)
   puma (>= 5.0)
   rack-cors
-  rails (~> 8.0.1)
+  rails (~> 8.1.0)
   rails-i18n
   rspec-rails
   rswag
