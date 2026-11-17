@@ -363,7 +363,7 @@ PLATFORMS
 
 DEPENDENCIES
   bcrypt (~> 3.1)
-  brakeman
+  brakeman (~> 8.1)
   debug
   dotenv
   factory_bot_rails
