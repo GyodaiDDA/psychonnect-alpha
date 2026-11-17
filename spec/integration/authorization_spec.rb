@@ -26,6 +26,22 @@ RSpec.describe 'Authorization boundaries', type: :request do
     end
   end
 
+  describe 'user profile access' do
+    it 'denies an unrelated authenticated user access to another profile' do
+      get "/users/#{patient.id}", headers: auth_header(outsider_patient)
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'allows a physician to read a linked patient profile' do
+      PhysicianPatient.create!(physician: physician, patient: patient)
+
+      get "/users/#{patient.id}", headers: auth_header(physician)
+
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
   describe 'treatment access' do
     it 'allows a patient to read their own current treatment' do
       get "/treatment/current/#{patient.id}", headers: auth_header(patient)
@@ -79,6 +95,25 @@ RSpec.describe 'Authorization boundaries', type: :request do
   end
 
   describe 'prescription creation' do
+    it 'does not allow a patient to attribute a prescription to a different physician' do
+      medication = create(:medication)
+      params = {
+        prescription: {
+          patient_id: patient.id,
+          physician_id: physician.id,
+          medication_id: medication.id,
+          quantity: 1,
+          time: '08:00'
+        }
+      }
+
+      expect do
+        post '/prescriptions', params: params, as: :json, headers: auth_header(patient)
+      end.not_to change(Prescription, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
     it 'does not create a prescription for a user who is neither its patient nor physician' do
       medication = create(:medication)
       params = {
