@@ -95,7 +95,8 @@ RSpec.describe 'Authorization boundaries', type: :request do
   end
 
   describe 'prescription creation' do
-    it 'does not allow a patient to attribute a prescription to a different physician' do
+    it 'allows a patient to record a treatment change and records the patient as the actor' do
+      PhysicianPatient.create!(physician: physician, patient: patient)
       medication = create(:medication)
       params = {
         prescription: {
@@ -109,9 +110,13 @@ RSpec.describe 'Authorization boundaries', type: :request do
 
       expect do
         post '/prescriptions', params: params, as: :json, headers: auth_header(patient)
-      end.not_to change(Prescription, :count)
+      end.to change(Prescription, :count).by(1)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:created)
+      recorded_change = Prescription.order(:created_at).last
+      expect(recorded_change.patient_id).to eq(patient.id)
+      expect(recorded_change.physician_id).to eq(physician.id)
+      expect(recorded_change.current_user_id).to eq(patient.id)
     end
 
     it 'does not create a prescription for a user who is neither its patient nor physician' do
